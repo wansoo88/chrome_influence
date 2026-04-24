@@ -1,0 +1,28 @@
+{
+  "name": "creator-radar",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Daily research accelerator for content creators. Auto-discover top YouTube/Instagram/X creators in your niche, cluster their content with AI, export to Notion/Excel/Gmail. Bring your own API keys.",
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "lint:types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "2.0.0-beta.28",
+    "@types/chrome": "^0.0.278",
+    "@types/node": "^22.8.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10"
+  }
+}

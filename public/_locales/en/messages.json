@@ -1,0 +1,10 @@
+{
+  "extName": {
+    "message": "CreatorRadar — Daily Niche Brief",
+    "description": "Extension name shown in Chrome Web Store and toolbar."
+  },
+  "extDescription": {
+    "message": "Auto-discover top creators in your niche. AI brief + gap report + export to Notion/Excel/Gmail. Pay once, bring your own key.",
+    "description": "Short description for the store listing."
+  }
+}
