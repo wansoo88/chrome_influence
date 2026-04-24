@@ -16,9 +16,9 @@ const SCHEMA_VERSION = 1;
 const DEFAULT_API_KEYS: ApiKeys = {
   youtube: null,
   youtubeVerifiedAt: null,
-  aiProvider: 'openai',
+  aiProvider: 'openai', // 기본. 사용자가 Options에서 4개 중 선택.
   aiKey: null,
-  aiModel: 'gpt-4o-mini',
+  aiModel: 'gpt-4o-mini', // openai 기본. provider 전환 시 자동 교체 (OptionsApp).
   aiVerifiedAt: null,
   xpoz: null,
 };

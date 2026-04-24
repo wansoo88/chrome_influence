@@ -5,7 +5,7 @@
 
 export type Platform = 'youtube' | 'instagram' | 'x' | 'tiktok';
 
-export type AiProvider = 'openai' | 'openrouter';
+export type AiProvider = 'openai' | 'gemini' | 'claude' | 'openrouter';
 
 export interface ApiKeys {
   // YouTube Data API v3 키 — BYOK (사용자가 Google Cloud Console에서 발급).

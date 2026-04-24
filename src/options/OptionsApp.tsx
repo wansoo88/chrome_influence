@@ -11,6 +11,8 @@ import type { ApiKeys, NicheCategory, StorageSchema } from '@/shared/types';
 import { CATEGORY_PRESETS, CATEGORY_KEYWORDS_KO } from '@/shared/presets';
 import type { ServerMsg, VerifyKeyRequest } from '@/shared/messages';
 import { uid } from '@/shared/id';
+import { PROVIDERS, getDefaultModelFor } from '@/shared/ai-providers';
+import type { AiProvider } from '@/shared/types';
 
 /**
  * Options:
@@ -80,8 +82,13 @@ export function OptionsApp() {
 function KeysSection({ keys }: { keys: ApiKeys }) {
   const [ytKey, setYtKey] = useState(keys.youtube ?? '');
   const [aiKey, setAiKey] = useState(keys.aiKey ?? '');
-  const [aiProvider, setAiProvider] = useState<'openai' | 'openrouter'>(keys.aiProvider);
+  const [aiProvider, setAiProvider] = useState<AiProvider>(keys.aiProvider);
   const [aiModel, setAiModel] = useState(keys.aiModel);
+  // provider 전환 시 모델이 다른 제공자의 기본값이면 자동 교체.
+  useEffect(() => {
+    const allKnownDefaults = (Object.keys(PROVIDERS) as AiProvider[]).map(getDefaultModelFor);
+    setAiModel((prev) => (!prev || allKnownDefaults.includes(prev) ? getDefaultModelFor(aiProvider) : prev));
+  }, [aiProvider]);
   const [ytMsg, setYtMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [aiMsg, setAiMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [ytVerifying, setYtVerifying] = useState(false);
@@ -112,11 +119,12 @@ function KeysSection({ keys }: { keys: ApiKeys }) {
   async function verifyAi() {
     setAiVerifying(true);
     setAiMsg(null);
-    await setApiKeys({ aiKey: aiKey.trim(), aiProvider, aiModel: aiModel.trim() || 'gpt-4o-mini' });
+    const modelToSave = aiModel.trim() || getDefaultModelFor(aiProvider);
+    await setApiKeys({ aiKey: aiKey.trim(), aiProvider, aiModel: modelToSave });
     const req: VerifyKeyRequest = {
       kind: 'verifyKey',
       target: 'ai',
-      keys: { aiKey: aiKey.trim(), aiProvider, aiModel: aiModel.trim() || 'gpt-4o-mini' },
+      keys: { aiKey: aiKey.trim(), aiProvider, aiModel: modelToSave },
     };
     try {
       const res = (await chrome.runtime.sendMessage(req)) as ServerMsg | undefined;
@@ -134,6 +142,9 @@ function KeysSection({ keys }: { keys: ApiKeys }) {
       setAiVerifying(false);
     }
   }
+
+  const providerMeta = PROVIDERS[aiProvider];
+  const isCustomModel = !providerMeta.models.some((m) => m.id === aiModel);
 
   return (
     <div className="card">
@@ -180,22 +191,35 @@ function KeysSection({ keys }: { keys: ApiKeys }) {
       <div className="field">
         <label>AI provider</label>
         <div className="chips">
-          <button
-            type="button"
-            className={`chip ${aiProvider === 'openai' ? 'active' : ''}`}
-            onClick={() => setAiProvider('openai')}
-          >
-            OpenAI
-          </button>
-          <button
-            type="button"
-            className={`chip ${aiProvider === 'openrouter' ? 'active' : ''}`}
-            onClick={() => setAiProvider('openrouter')}
-          >
-            OpenRouter
-          </button>
+          {(Object.keys(PROVIDERS) as AiProvider[]).map((p) => (
+            <button
+              key={p}
+              type="button"
+              className={`chip ${aiProvider === p ? 'active' : ''}`}
+              onClick={() => setAiProvider(p)}
+            >
+              {PROVIDERS[p].label}
+            </button>
+          ))}
         </div>
+        <div className="hint">{providerMeta.costHintPerBrief}</div>
       </div>
+
+      {providerMeta.warning && (
+        <div
+          className="hint"
+          style={{
+            padding: 10,
+            borderRadius: 8,
+            background: 'rgba(245, 158, 11, 0.12)',
+            border: '1px solid rgba(245, 158, 11, 0.3)',
+            color: 'var(--fg)',
+            marginBottom: 12,
+          }}
+        >
+          ⚠️ {providerMeta.warning}
+        </div>
+      )}
 
       <div className="field">
         <label>AI API key</label>
@@ -204,37 +228,56 @@ function KeysSection({ keys }: { keys: ApiKeys }) {
           name="cr-ai-key"
           value={aiKey}
           onChange={(e) => setAiKey(e.target.value)}
-          placeholder="sk-…"
+          placeholder={providerMeta.keyPrefix ? `${providerMeta.keyPrefix}…` : 'paste your key'}
           autoComplete="new-password"
           spellCheck={false}
         />
         <div className="hint">
-          {aiProvider === 'openai' ? (
-            <>
-              <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer">
-                Get an OpenAI key
-              </a>
-              . Expect ≈ $0.002 per brief with <code>gpt-4o-mini</code>.
-            </>
-          ) : (
-            <>
-              <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer">
-                Get an OpenRouter key
-              </a>
-              . Access Claude, Gemini, Llama through one key.
-            </>
-          )}
+          <a href={providerMeta.docUrl} target="_blank" rel="noreferrer">
+            Get a {providerMeta.label} key
+          </a>
+          . Stored on this device only — never sent to the developer.
         </div>
       </div>
 
       <div className="field">
         <label>Model</label>
-        <input
-          type="text"
-          value={aiModel}
-          onChange={(e) => setAiModel(e.target.value)}
-          placeholder={aiProvider === 'openai' ? 'gpt-4o-mini' : 'openai/gpt-4o-mini'}
-        />
+        <select
+          value={isCustomModel ? '__custom__' : aiModel}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v === '__custom__') {
+              // 커스텀 입력으로 전환 — 값 비우지 않고 그대로 둔 채 input 노출.
+              setAiModel('');
+            } else {
+              setAiModel(v);
+            }
+          }}
+        >
+          {providerMeta.models.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.recommended ? '★ ' : ''}
+              {m.label}
+              {m.note ? ` — ${m.note}` : ''}
+            </option>
+          ))}
+          <option value="__custom__">Custom model ID…</option>
+        </select>
+        {isCustomModel && (
+          <>
+            <input
+              type="text"
+              value={aiModel}
+              onChange={(e) => setAiModel(e.target.value)}
+              placeholder={getDefaultModelFor(aiProvider)}
+              style={{ marginTop: 8 }}
+            />
+            <div className="hint">
+              Enter any model ID the provider accepts. Example:{' '}
+              <code>{getDefaultModelFor(aiProvider)}</code>.
+            </div>
+          </>
+        )}
       </div>
 
       <div className="row">

@@ -243,10 +243,10 @@ async function runGenerateBrief(categoryId: string, forceRefresh: boolean): Prom
     }
   }
 
-  // AI 클러스터링 + 요약.
+  // AI 클러스터링 + 요약. category를 프롬프트에 전달 → 언어·톤·키워드 맥락 반영.
   let ai;
   try {
-    ai = await summarizeAndCluster({ keys, videos });
+    ai = await summarizeAndCluster({ keys, category: cat, videos });
   } catch (e) {
     if (e instanceof AiError) {
       if (e.code === 'invalid_key') return asServerErr('AI_KEY_INVALID', e.message);
