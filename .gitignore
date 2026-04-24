@@ -24,7 +24,8 @@ Thumbs.db
 npm-debug.log*
 pnpm-debug.log*
 
-# Claude Code 로컬 설정
+# Claude Code 로컬 설정 (사용자 환경 고유)
+# 단, .claude/hooks/*.sh 와 CLAUDE.md 는 커밋되어야 함 — 다음 세션에서 동일 셋업으로 이어받기 위해.
 .claude/settings.local.json
 
 # 테스트 아티팩트
